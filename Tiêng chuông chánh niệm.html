@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chánh Niệm & Pomodoro</title>
+  <style>
+    :root {
+      /* Tông màu chủ đạo: Vàng Hoàng Gia / Zen Gold */
+      --bg-gradient: linear-gradient(135deg, #191610 0%, #0d0b07 100%);
+      --card-bg: rgba(255, 235, 180, 0.04);
+      --card-border: rgba(255, 215, 0, 0.15);
+      --accent: #f5b041;
+      --accent-hover: #f39c12;
+      --accent-glow: rgba(245, 176, 65, 0.3);
+      --text: #fef9e7;
+      --text-dim: #b8a990;
+      --active-item: rgba(245, 176, 65, 0.12);
+      --danger: #e74c3c;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    }
+
+    body {
+      background: var(--bg-gradient);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 30px 15px;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 300;
+      letter-spacing: 3px;
+      margin-bottom: 25px;
+      color: var(--accent);
+      text-transform: uppercase;
+      text-shadow: 0 0 15px var(--accent-glow);
+    }
+
+    .container {
+      width: 100%;
+      max-width: 800px;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 24px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+
+    .card-title {
+      font-size: 1.15rem;
+      font-weight: 500;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--accent);
+    }
+
+    /* --- PHẦN 1: POMODORO & AUTO BELL --- */
+    .timer-display {
+      font-size: 4.6rem;
+      font-weight: 200;
+      letter-spacing: 3px;
+      text-align: center;
+      margin: 10px 0;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+      text-shadow: 0 0 20px var(--accent-glow);
+    }
+
+    .presets {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+
+    .btn-chip {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text-dim);
+      padding: 6px 14px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+
+    .btn-chip:hover, .btn-chip.active {
+      background: var(--active-item);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 15px;
+    }
+
+    button {
+      background: var(--accent);
+      color: #120e04;
+      border: none;
+      padding: 10px 22px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    button:hover {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+    }
+
+    button.btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    button.btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: var(--accent);
+    }
+
+    /* Auto 30m Bell Banner */
+    .auto-bell-box {
+      margin-top: 15px;
+      padding: 14px 18px;
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px dashed var(--card-border);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .auto-bell-info {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .auto-bell-title {
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--text);
+    }
+
+    .auto-bell-sub {
+      font-size: 0.82rem;
+      color: var(--text-dim);
+    }
+
+    .btn-toggle-auto {
+      padding: 8px 16px;
+      font-size: 0.85rem;
+      border-radius: 20px;
+    }
+
+    .btn-toggle-auto.active {
+      background: var(--accent);
+      color: #120e04;
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+
+    /* --- PHẦN 2: TRÌNH PHÁT ÂM THANH & DANH SÁCH --- */
+    .file-drop {
+      border: 2px dashed rgba(245, 176, 65, 0.3);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      cursor: pointer;
+      margin-bottom: 18px;
+      transition: all 0.2s;
+      background: rgba(245, 176, 65, 0.02);
+    }
+
+    .file-drop:hover {
+      border-color: var(--accent);
+      background: rgba(245, 176, 65, 0.06);
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    .track-now-playing {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 12px 16px;
+      border-radius: 12px;
+      margin-bottom: 15px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .track-title {
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--accent);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 80%;
+    }
+
+    .progress-bar-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .time-text {
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      min-width: 45px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    input[type="range"] {
+      flex: 1;
+      -webkit-appearance: none;
+      background: rgba(255, 255, 255, 0.15);
+      height: 6px;
+      border-radius: 3px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      box-shadow: 0 0 8px var(--accent);
+      transition: transform 0.1s;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+
+    .player-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .mode-chips {
+      display: flex;
+      gap: 6px;
+    }
+
+    .mode-btn {
+      padding: 6px 12px;
+      font-size: 0.85rem;
+      border-radius: 8px;
+    }
+
+    .speed-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 4px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--card-border);
+    }
+
+    .speed-val {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--accent);
+      min-width: 48px;
+      text-align: center;
+    }
+
+    .btn-speed {
+      padding: 3px 8px;
+      font-size: 0.85rem;
+      border-radius: 6px;
+    }
+
+    /* Playlist Table */
+    .playlist-header {
+      font-size: 0.9rem;
+      color: var(--text-dim);
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .playlist-box {
+      max-height: 240px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding-right: 4px;
+    }
+
+    .playlist-box::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    .playlist-box::-webkit-scrollbar-thumb {
+      background: rgba(245, 176, 65, 0.3);
+      border-radius: 3px;
+    }
+
+    .playlist-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .playlist-item:hover {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .playlist-item.active {
+      background: var(--active-item);
+      border-color: var(--accent);
+    }
+
+    .item-title {
+      font-size: 0.88rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 60%;
+      cursor: pointer;
+    }
+
+    .item-actions {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .btn-action {
+      background: transparent;
+      color: var(--text-dim);
+      padding: 4px 6px;
+      font-size: 0.8rem;
+      border-radius: 6px;
+    }
+
+    .btn-action:hover {
+      color: var(--accent);
+      background: rgba(255, 255, 255, 0.1);
+      transform: none;
+    }
+
+    .btn-action.btn-del:hover {
+      color: var(--danger);
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Chánh Niệm & Tập Trung</h1>
+
+  <div class="container">
+    <!-- KHỐI 1: POMODORO & CHUÔNG CHÁNH NIỆM -->
+    <div class="card">
+      <div class="card-title">
+        <span>🔔</span> Pomodoro & Chuông Chánh Niệm
+      </div>
+
+      <div class="presets">
+        <button class="btn-chip active" onclick="setTimer(25, this)">25 Phút (Tập trung)</button>
+        <button class="btn-chip" onclick="setTimer(5, this)">5 Phút (Nghỉ ngắn)</button>
+        <button class="btn-chip" onclick="setTimer(15, this)">15 Phút (Nghỉ dài)</button>
+      </div>
+
+      <div class="timer-display" id="timerDisplay">25:00</div>
+
+      <div class="controls">
+        <button id="startBtn" onclick="toggleTimer()">Bắt Đầu Pomodoro</button>
+        <button class="btn-secondary" onclick="resetTimer()">Đặt Lại</button>
+        <button class="btn-secondary" onclick="playMindfulnessBell()">Thử Chuông</button>
+      </div>
+
+      <!-- Chuông tự động 30 phút (Chạy song song) -->
+      <div class="auto-bell-box">
+        <div class="auto-bell-info">
+          <div class="auto-bell-title">Chuông Tự Động Định Kỳ (Mỗi 30 Phút)</div>
+          <div class="auto-bell-sub" id="autoBellStatus">Trạng thái: Đang TẮT</div>
+        </div>
+        <button id="autoBellBtn" class="btn-secondary btn-toggle-auto" onclick="toggleAutoBell()">Bật Chuông 30p</button>
+      </div>
+    </div>
+
+    <!-- KHỐI 2: TRÌNH PHÁT ÂM THANH MÁY -->
+    <div class="card">
+      <div class="card-title">
+        <span>🎧</span> Phát Âm Thanh & Danh Sách Bài
+      </div>
+
+      <div class="file-drop" onclick="document.getElementById('fileInput').click()">
+        📁 <b>Nhấn để chọn file</b> (Hỗ trợ chọn nhiều file cùng lúc: .mp3, .wav, .m4a, ...)
+      </div>
+      <input type="file" id="fileInput" accept="audio/*" multiple>
+
+      <div class="track-now-playing">
+        <div class="track-title" id="trackName">Chưa có bài nào đang phát</div>
+        <div style="font-size: 0.8rem; color: var(--text-dim);" id="trackCount">0 bài</div>
+      </div>
+
+      <!-- Thanh tua bài hát -->
+      <div class="progress-bar-container">
+        <span class="time-text" id="currentTime">00:00</span>
+        <input type="range" id="seekSlider" value="0" min="0" max="100" step="0.1" disabled>
+        <span class="time-text" id="duration">00:00</span>
+      </div>
+
+      <!-- Bảng điều khiển phát -->
+      <div class="player-controls">
+        <!-- Nút Play / Next / Prev -->
+        <div style="display: flex; gap: 6px;">
+          <button class="btn-secondary" onclick="playPrevTrack()" title="Bài trước">⏮</button>
+          <button class="btn-secondary" onclick="seekRelative(-10)">-10s</button>
+          <button id="playAudioBtn" onclick="togglePlayAudio()" disabled>Phát</button>
+          <button class="btn-secondary" onclick="seekRelative(10)">+10s</button>
+          <button class="btn-secondary" onclick="playNextTrack()" title="Bài kế">⏭</button>
+        </div>
+
+        <!-- Chế độ phát: Tuần tự / Lặp 1 bài / Ngẫu nhiên -->
+        <div class="mode-chips">
+          <button id="modeSeqBtn" class="btn-chip active mode-btn" onclick="setPlayMode('sequential')" title="Phát tuần tự">🔁 Tuần tự</button>
+          <button id="modeRepeatBtn" class="btn-chip mode-btn" onclick="setPlayMode('repeat-one')" title="Lặp lại 1 bài">🔂 Lặp 1 bài</button>
+          <button id="modeShuffleBtn" class="btn-chip mode-btn" onclick="setPlayMode('shuffle')" title="Phát ngẫu nhiên">🔀 Ngẫu nhiên</button>
+        </div>
+
+        <!-- Tốc độ phát: x1.0 -> x3.0 (bước 0.25) -->
+        <div class="speed-controls">
+          <span style="font-size: 0.82rem; color: var(--text-dim);">Tốc độ:</span>
+          <button class="btn-secondary btn-speed" onclick="changeSpeed(-0.25)">-</button>
+          <span class="speed-val" id="speedDisplay">x1.00</span>
+          <button class="btn-secondary btn-speed" onclick="changeSpeed(0.25)">+</button>
+        </div>
+      </div>
+
+      <!-- Danh sách bài hát (Cho phép đổi thứ tự) -->
+      <div class="playlist-header">
+        <span>Danh sách phát</span>
+        <span style="font-size: 0.8rem; cursor: pointer; color: var(--accent);" onclick="clearPlaylist()">Xóa hết</span>
+      </div>
+      <div class="playlist-box" id="playlistContainer">
+        <div style="text-align: center; color: var(--text-dim); padding: 15px; font-size: 0.85rem;">
+          Chưa có bài hát trong danh sách
+        </div>
+      </div>
+
+      <audio id="audioPlayer"></audio>
+    </div>
+  </div>
+
+  <script>
+    /* ======================================================================
+       1. TỔNG HỢP TIẾNG CHUÔNG CHÁNH NIỆM (TIBETAN SINGING BOWL)
+       ====================================================================== */
+    let audioCtx = null;
+
+    function playMindfulnessBell() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+
+      const now = audioCtx.currentTime;
+      const baseFreq = 216; // Tần số trầm ấm A#3
+      
+      const partials = [
+        { mult: 1.000, gain: 0.65, decay: 13 },
+        { mult: 1.006, gain: 0.50, decay: 12 }, // Giao thoa tạo độ rung ngân sâu
+        { mult: 2.756, gain: 0.35, decay: 8  },
+        { mult: 5.404, gain: 0.20, decay: 5  },
+        { mult: 8.930, gain: 0.08, decay: 3  }
+      ];
+
+      partials.forEach(p => {
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(baseFreq * p.mult, now);
+
+        gainNode.gain.setValueAtTime(0.0001, now);
+        gainNode.gain.exponentialRampToValueAtTime(p.gain, now + 0.05);
+        gainNode.gain.exponentialRampToValueAtTime(0.00001, now + p.decay);
+
+        osc.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        osc.start(now);
+        osc.stop(now + p.decay);
+      });
+    }
+
+    /* ======================================================================
+       2. POMODORO TIMER ĐỘC LẬP
+       ====================================================================== */
+    let totalSeconds = 25 * 60;
+    let remainingSeconds = totalSeconds;
+    let timerInterval = null;
+    let isRunning = false;
+
+    const timerDisplay = document.getElementById('timerDisplay');
+    const startBtn = document.getElementById('startBtn');
+
+    function updateTimerDisplay() {
+      const mins = Math.floor(remainingSeconds / 60).toString().padStart(2, '0');
+      const secs = (remainingSeconds % 60).toString().padStart(2, '0');
+      timerDisplay.textContent = `${mins}:${secs}`;
+    }
+
+    function toggleTimer() {
+      if (isRunning) {
+        clearInterval(timerInterval);
+        isRunning = false;
+        startBtn.textContent = 'Tiếp Tục Pomodoro';
+      } else {
+        isRunning = true;
+        startBtn.textContent = 'Tạm Dừng';
+        timerInterval = setInterval(() => {
+          if (remainingSeconds > 0) {
+            remainingSeconds--;
+            updateTimerDisplay();
+          } else {
+            clearInterval(timerInterval);
+            isRunning = false;
+            startBtn.textContent = 'Bắt Đầu Pomodoro';
+            playMindfulnessBell(); // Pomodoro hết giờ -> Đánh chuông
+          }
+        }, 1000);
+      }
+    }
+
+    function resetTimer() {
+      clearInterval(timerInterval);
+      isRunning = false;
+      remainingSeconds = totalSeconds;
+      startBtn.textContent = 'Bắt Đầu Pomodoro';
+      updateTimerDisplay();
+    }
+
+    function setTimer(minutes, btn) {
+      document.querySelectorAll('.presets .btn-chip').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      totalSeconds = minutes * 60;
+      resetTimer();
+    }
+
+    /* ======================================================================
+       3. CHUÔNG TỰ ĐỘNG MỖI 30 PHÚT (CHẠY SONG SONG)
+       ====================================================================== */
+    const AUTO_BELL_INTERVAL = 30 * 60; // 30 phút
+    let autoBellSeconds = AUTO_BELL_INTERVAL;
+    let autoBellInterval = null;
+    let isAutoBellRunning = false;
+
+    const autoBellBtn = document.getElementById('autoBellBtn');
+    const autoBellStatus = document.getElementById('autoBellStatus');
+
+    function updateAutoBellStatus() {
+      const m = Math.floor(autoBellSeconds / 60).toString().padStart(2, '0');
+      const s = (autoBellSeconds % 60).toString().padStart(2, '0');
+      autoBellStatus.textContent = `Trạng thái: Đang BẬT • Lần tới sau: ${m}:${s}`;
+    }
+
+    function toggleAutoBell() {
+      if (isAutoBellRunning) {
+        clearInterval(autoBellInterval);
+        isAutoBellRunning = false;
+        autoBellBtn.textContent = 'Bật Chuông 30p';
+        autoBellBtn.classList.remove('active');
+        autoBellStatus.textContent = 'Trạng thái: Đang TẮT';
+      } else {
+        isAutoBellRunning = true;
+        autoBellSeconds = AUTO_BELL_INTERVAL;
+        autoBellBtn.textContent = 'Tắt Chuông 30p';
+        autoBellBtn.classList.add('active');
+        updateAutoBellStatus();
+
+        autoBellInterval = setInterval(() => {
+          if (autoBellSeconds > 0) {
+            autoBellSeconds--;
+            updateAutoBellStatus();
+          } else {
+            playMindfulnessBell(); // Cứ đúng 30p chuông sẽ kêu
+            autoBellSeconds = AUTO_BELL_INTERVAL; // Tự động reset lại 30 phút tiếp theo
+            updateAutoBellStatus();
+          }
+        }, 1000);
+      }
+    }
+
+    /* ======================================================================
+       4. TRÌNH PHÁT ÂM THANH: PLAYLIST, ĐỔI THỨ TỰ, CHẾ ĐỘ PHÁT & TỐC ĐỘ
+       ====================================================================== */
+    let playlist = []; // Mảng chứa { name, url }
+    let currentIndex = -1;
+    let playMode = 'sequential'; // 'sequential' | 'repeat-one' | 'shuffle'
+    let currentSpeed = 1.0;
+    let isDragging = false;
+
+    const audioPlayer = document.getElementById('audioPlayer');
+    const fileInput = document.getElementById('fileInput');
+    const trackName = document.getElementById('trackName');
+    const trackCount = document.getElementById('trackCount');
+    const playAudioBtn = document.getElementById('playAudioBtn');
+    const seekSlider = document.getElementById('seekSlider');
+    const currentTimeEl = document.getElementById('currentTime');
+    const durationEl = document.getElementById('duration');
+    const speedDisplay = document.getElementById('speedDisplay');
+    const playlistContainer = document.getElementById('playlistContainer');
+
+    // Nạp nhiều file vào danh sách
+    fileInput.addEventListener('change', (e) => {
+      const files = Array.from(e.target.files);
+      if (files.length === 0) return;
+
+      const startIndex = playlist.length;
+      files.forEach(f => {
+        playlist.push({
+          name: f.name,
+          url: URL.createObjectURL(f)
+        });
+      });
+
+      renderPlaylist();
+      if (currentIndex === -1) {
+        loadTrack(startIndex);
+      }
+      fileInput.value = ''; // Reset để có thể chọn lại file cũ nếu muốn
+    });
+
+    function renderPlaylist() {
+      trackCount.textContent = `${playlist.length} bài`;
+      if (playlist.length === 0) {
+        playlistContainer.innerHTML = '<div style="text-align: center; color: var(--text-dim); padding: 15px; font-size: 0.85rem;">Chưa có bài hát trong danh sách</div>';
+        return;
+      }
+
+      playlistContainer.innerHTML = '';
+      playlist.forEach((item, index) => {
+        const div = document.createElement('div');
+        div.className = `playlist-item ${index === currentIndex ? 'active' : ''}`;
+        
+        div.innerHTML = `
+          <span class="item-title" onclick="loadTrack(${index}, true)" title="${item.name}">${index + 1}. ${item.name}</span>
+          <div class="item-actions">
+            <button class="btn-action" onclick="moveTrack(${index}, -1)" ${index === 0 ? 'disabled' : ''} title="Đưa lên">▲</button>
+            <button class="btn-action" onclick="moveTrack(${index}, 1)" ${index === playlist.length - 1 ? 'disabled' : ''} title="Đưa xuống">▼</button>
+            <button class="btn-action btn-del" onclick="removeTrack(${index})" title="Xóa">✕</button>
+          </div>
+        `;
+        playlistContainer.appendChild(div);
+      });
+    }
+
+    // Đổi thứ tự bài hát (Move Up / Down)
+    function moveTrack(index, direction) {
+      const newIndex = index + direction;
+      if (newIndex < 0 || newIndex >= playlist.length) return;
+
+      const temp = playlist[index];
+      playlist[index] = playlist[newIndex];
+      playlist[newIndex] = temp;
+
+      // Cập nhật lại chỉ số đang phát
+      if (currentIndex === index) {
+        currentIndex = newIndex;
+      } else if (currentIndex === newIndex) {
+        currentIndex = index;
+      }
+
+      renderPlaylist();
+    }
+
+    // Xóa 1 bài khỏi danh sách
+    function removeTrack(index) {
+      if (index === currentIndex) {
+        audioPlayer.pause();
+        playlist.splice(index, 1);
+        if (playlist.length > 0) {
+          currentIndex = index < playlist.length ? index : 0;
+          loadTrack(currentIndex, true);
+        } else {
+          currentIndex = -1;
+          audioPlayer.src = '';
+          trackName.textContent = 'Chưa có bài nào đang phát';
+          playAudioBtn.disabled = true;
+          seekSlider.disabled = true;
+          playAudioBtn.textContent = 'Phát';
+        }
+      } else {
+        if (index < currentIndex) currentIndex--;
+        playlist.splice(index, 1);
+      }
+      renderPlaylist();
+    }
+
+    function clearPlaylist() {
+      audioPlayer.pause();
+      audioPlayer.src = '';
+      playlist = [];
+      currentIndex = -1;
+      trackName.textContent = 'Chưa có bài nào đang phát';
+      playAudioBtn.disabled = true;
+      seekSlider.disabled = true;
+      playAudioBtn.textContent = 'Phát';
+      renderPlaylist();
+    }
+
+    // Nạp bài vào audio element
+    function loadTrack(index, autoPlay = false) {
+      if (index < 0 || index >= playlist.length) return;
+      currentIndex = index;
+      const track = playlist[currentIndex];
+      audioPlayer.src = track.url;
+      trackName.textContent = track.name;
+      playAudioBtn.disabled = false;
+      seekSlider.disabled = false;
+
+      // Duy trì tốc độ phát hiện tại
+      audioPlayer.playbackRate = currentSpeed;
+      renderPlaylist();
+
+      if (autoPlay) {
+        audioPlayer.play();
+        playAudioBtn.textContent = 'Tạm Dừng';
+      }
+    }
+
+    function togglePlayAudio() {
+      if (!audioPlayer.src) return;
+      if (audioPlayer.paused) {
+        audioPlayer.play();
+        playAudioBtn.textContent = 'Tạm Dừng';
+      } else {
+        audioPlayer.pause();
+        playAudioBtn.textContent = 'Phát';
+      }
+    }
+
+    function playNextTrack() {
+      if (playlist.length === 0) return;
+      if (playMode === 'shuffle') {
+        let randomIndex = Math.floor(Math.random() * playlist.length);
+        if (playlist.length > 1 && randomIndex === currentIndex) {
+          randomIndex = (randomIndex + 1) % playlist.length;
+        }
+        loadTrack(randomIndex, true);
+      } else {
+        const nextIndex = (currentIndex + 1) % playlist.length;
+        loadTrack(nextIndex, true);
+      }
+    }
+
+    function playPrevTrack() {
+      if (playlist.length === 0) return;
+      const prevIndex = (currentIndex - 1 + playlist.length) % playlist.length;
+      loadTrack(prevIndex, true);
+    }
+
+    // Xử lý khi hết bài
+    audioPlayer.addEventListener('ended', () => {
+      if (playMode === 'repeat-one') {
+        audioPlayer.currentTime = 0;
+        audioPlayer.play();
+      } else {
+        playNextTrack();
+      }
+    });
+
+    // Chế độ phát
+    function setPlayMode(mode) {
+      playMode = mode;
+      document.getElementById('modeSeqBtn').classList.toggle('active', mode === 'sequential');
+      document.getElementById('modeRepeatBtn').classList.toggle('active', mode === 'repeat-one');
+      document.getElementById('modeShuffleBtn').classList.toggle('active', mode === 'shuffle');
+    }
+
+    // Chỉnh tốc độ phát: x1.0 -> x3.0 (bước 0.25)
+    function changeSpeed(step) {
+      let newSpeed = Math.round((currentSpeed + step) * 100) / 100;
+      if (newSpeed >= 1.0 && newSpeed <= 3.0) {
+        currentSpeed = newSpeed;
+        audioPlayer.playbackRate = currentSpeed;
+        speedDisplay.textContent = `x${currentSpeed.toFixed(2)}`;
+      }
+    }
+
+    // Format mm:ss
+    function formatTime(seconds) {
+      if (isNaN(seconds)) return "00:00";
+      const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+      const s = Math.floor(seconds % 60).toString().padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
+    // Đồng bộ thanh tua thời gian
+    audioPlayer.addEventListener('timeupdate', () => {
+      if (!isDragging && audioPlayer.duration) {
+        seekSlider.value = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+        currentTimeEl.textContent = formatTime(audioPlayer.currentTime);
+      }
+    });
+
+    audioPlayer.addEventListener('loadedmetadata', () => {
+      durationEl.textContent = formatTime(audioPlayer.duration);
+      audioPlayer.playbackRate = currentSpeed;
+    });
+
+    seekSlider.addEventListener('mousedown', () => isDragging = true);
+    seekSlider.addEventListener('touchstart', () => isDragging = true);
+
+    seekSlider.addEventListener('input', () => {
+      if (audioPlayer.duration) {
+        const seekTime = (seekSlider.value / 100) * audioPlayer.duration;
+        currentTimeEl.textContent = formatTime(seekTime);
+      }
+    });
+
+    seekSlider.addEventListener('change', () => {
+      if (audioPlayer.duration) {
+        audioPlayer.currentTime = (seekSlider.value / 100) * audioPlayer.duration;
+      }
+      isDragging = false;
+    });
+
+    function seekRelative(offset) {
+      if (!audioPlayer.src) return;
+      audioPlayer.currentTime = Math.min(Math.max(audioPlayer.currentTime + offset, 0), audioPlayer.duration);
+    }
+  </script>
+</body>
+</html>
